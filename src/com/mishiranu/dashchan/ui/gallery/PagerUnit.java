@@ -298,7 +298,7 @@ public class PagerUnit implements PagerInstance.Callback {
 		syncTikTokPreferences();
 		videoUnit.onResume();
 		refreshSideVideoFrames();
-		startCachedImagePreload();
+		startMediaPrefetch();
 	}
 
 	public void onPause(boolean changingConfigurations) {
@@ -330,13 +330,20 @@ public class PagerUnit implements PagerInstance.Callback {
 
 	private void setTikTokMode(boolean enabled) {
 		tikTokSession.selectMode(enabled, tikTokFilter);
-		if (viewsInitialized) updateTikTokPagingMode(getCurrentGalleryItem());
+		if (viewsInitialized) {
+			updateTikTokPagingMode(getCurrentGalleryItem());
+			// The new mode drops the pending plan; rebuild it for what a swipe can now reach.
+			startMediaPrefetch();
+		}
 	}
 
 	private void updateTikTokPagingMode(GalleryItem item) {
 		Chan chan = Chan.get(galleryInstance.chanName);
 		// Null holders occur while the grid is open; they are not a user selection.
 		boolean active = item != null && tikTokSession.selectItem(matchesTikTokFilter(item, tikTokFilter));
+		// The preloader builds its plan from this mode, so both directions and the filter match
+		// what a swipe can actually reach.
+		pagerInstance.mediaPreloader.setPagingMode(active, tikTokFilter);
 		if (tikTokPagingActive != active) {
 			endVolumeGesture();
 			verticalGesture = VerticalGesture.NONE;
@@ -450,6 +457,8 @@ public class PagerUnit implements PagerInstance.Callback {
 		} else {
 			updateTikTokPagingMode(getCurrentGalleryItem());
 		}
+		// A new filter changes which attachments are reachable; rebuild the pending plan.
+		startMediaPrefetch();
 	}
 
 	private float getTikTokGestureThreshold(PhotoViewPager view) {
@@ -815,14 +824,18 @@ public class PagerUnit implements PagerInstance.Callback {
 		viewPager.postDelayed(pagerAdapter::recycleAll, 200);
 	}
 
-	private void startCachedImagePreload() {
+	private void startMediaPrefetch() {
 		PagerInstance.ViewHolder holder = pagerInstance.currentHolder;
-		if (resumed && !finished && holder != null && holder.galleryItem != null
-				&& holder.loadState == PagerInstance.LoadState.COMPLETE
-				&& holder.galleryItem.isImage(Chan.get(galleryInstance.chanName))) {
-			pagerInstance.mediaPreloader.start(holder.galleryItem);
-			videoUnit.prepareNextVideo();
+		if (!resumed || finished || holder == null || holder.galleryItem == null) return;
+		boolean ready = holder.loadState == PagerInstance.LoadState.COMPLETE;
+		if (!ready && !(tikTokPagingActive && Preferences.isTikTokPrefetchEarly()
+				&& holder.galleryItem.isVideo(Chan.get(galleryInstance.chanName)))) {
+			// Ordinary browsing starts preloading after the visible item is complete. TikTok paging
+			// may start while a video still streams, because the next swipe is usually immediate.
+			return;
 		}
+		pagerInstance.mediaPreloader.start(holder.galleryItem);
+		videoUnit.prepareNextVideo();
 	}
 
 	private void loadImageVideo(final boolean reload, boolean mayShowThumbnailOnly, int waitBeforeVideo) {
@@ -1342,8 +1355,9 @@ public class PagerUnit implements PagerInstance.Callback {
 			} else {
 				galleryInstance.callback.invalidateOptionsMenu();
 				galleryInstance.callback.modifySystemUiVisibility(GalleryInstance.Flags.LOCKED_ERROR, false);
-				startCachedImagePreload();
 			}
+			// Re-plan for every page change; an in-flight transfer that is still wanted is kept.
+			startMediaPrefetch();
 			galleryInstance.callback.updateTitle();
 			if (galleryItem.postNumber != null && resumed && !galleryInstance.callback.isGalleryMode()) {
 				galleryInstance.callback.navigatePost(galleryItem, false, false);
@@ -1437,6 +1451,12 @@ public class PagerUnit implements PagerInstance.Callback {
 			if (verticalGesture == VerticalGesture.TIKTOK) {
 				tikTokGestureDistance = distance;
 				updateTikTokTransition(view, distance);
+				if (distance != 0f) {
+					// Move the queued transfers toward the way the finger is already travelling,
+					// without cancelling the one in flight.
+					pagerInstance.mediaPreloader.setDirection(distance > 0f
+							? GalleryPrefetchPlan.FORWARD : GalleryPrefetchPlan.BACKWARD);
+				}
 				boolean thresholdReached = tikTokTransitionIndex >= 0
 						&& Math.abs(distance) >= getTikTokGestureThreshold(view);
 				if (thresholdReached && !tikTokGestureThresholdReached) {

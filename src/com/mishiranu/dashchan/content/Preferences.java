@@ -3086,6 +3086,21 @@ public class Preferences {
 		}
 	}
 
+	public static final String KEY_TIKTOK_PREFETCH_EARLY = "tiktok_prefetch_early";
+	public static final boolean DEFAULT_TIKTOK_PREFETCH_EARLY = true;
+
+	public static boolean isTikTokPrefetchEarly() {
+		return PREFERENCES.getBoolean(KEY_TIKTOK_PREFETCH_EARLY, DEFAULT_TIKTOK_PREFETCH_EARLY);
+	}
+
+	public static final String KEY_TIKTOK_PREFETCH_BACKWARD = "tiktok_prefetch_backward";
+	public static final int DEFAULT_TIKTOK_PREFETCH_BACKWARD = 1;
+
+	public static int getTikTokPrefetchBackwardCount() {
+		return clamp(PREFERENCES.getInt(KEY_TIKTOK_PREFETCH_BACKWARD,
+				DEFAULT_TIKTOK_PREFETCH_BACKWARD), 0, 2);
+	}
+
 	public static final String KEY_ATTACHMENT_VIDEO_PREVIEW = "attachment_video_preview";
 	public static final boolean DEFAULT_ATTACHMENT_VIDEO_PREVIEW = true;
 

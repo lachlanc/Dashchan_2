@@ -76,7 +76,10 @@ public final class PreloadMediaTask extends HttpHolderTask<Void, File> {
 			if (response == null || response.getResponseCode() != 200) return null;
 			long length = response.getLength();
 			// Check actual response headers before opening/reading the body, not just post metadata.
-			if (length <= 0 || length > maxBytes || !allowed()) return null;
+			// A missing length (chunked response) is still cacheable: accept a natural end of stream
+			// below the byte cap, otherwise the oversized response is discarded below.
+			if (length > maxBytes || !allowed()) return null;
+			boolean knownLength = length > 0;
 			temporary = File.createTempFile("media-preload-", ".part", destination.getParentFile());
 			try (InputStream input = response.open(); FileOutputStream output = new FileOutputStream(temporary)) {
 				byte[] buffer = new byte[8192];
@@ -86,10 +89,14 @@ public final class PreloadMediaTask extends HttpHolderTask<Void, File> {
 				while (!isCancelled()) {
 					int count = input.read(buffer);
 					if (count < 0) {
-						complete = received == length && allowed();
+						// Reaching the cap is ambiguous with a truncated body, so it is never accepted.
+						complete = allowed() && (knownLength
+								? received == length
+								: received > 0 && received < maxBytes);
 						break;
 					}
-					if (received + count > length || received + count > maxBytes || isCancelled()) return null;
+					if (received + count > maxBytes || (knownLength && received + count > length)
+							|| isCancelled()) return null;
 					output.write(buffer, 0, count);
 					received += count;
 				}

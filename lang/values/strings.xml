@@ -692,6 +692,12 @@
 	<string name="tiktok_filter_hint">You can now swipe through photos in TikTok mode too! Hold the TikTok button to choose everything, videos only or photos only. The filter is also available in the ⋮ menu.</string>
 	<string name="enable_video_tiktok_mode">Enable TikTok mode</string>
 	<string name="disable_video_tiktok_mode">Disable TikTok mode</string>
+	<string name="tiktok_prefetch">TikTok mode prefetch</string>
+	<string name="tiktok_prefetch_early">Prefetch while the current video loads</string>
+	<string name="tiktok_prefetch_early_description">Start caching the next and previous attachments as soon as a TikTok page appears, instead of waiting for the visible video to finish loading. Swipes respond faster, but the background downloads share bandwidth with the video you are watching and use more data.</string>
+	<string name="tiktok_prefetch_backward">Previous attachments to prefetch</string>
+	<string name="tiktok_prefetch_backward_off">Off</string>
+	<string name="tiktok_prefetch_backward_description">How many attachments behind the current one are cached in TikTok mode, so swiping back is as fast as swiping forward. 0 disables reverse prefetching.</string>
 	<string name="video_screen_off_action">When the screen turns off</string>
 	<string name="video_screen_off_action__summary">Choose whether PiP video pauses or continues playing with the screen off</string>
 	<string name="video_screen_off_action_pause">Pause video</string>

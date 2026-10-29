@@ -717,6 +717,12 @@ public final class SettingsSearchIndex {
 				Preferences.KEY_VIDEO_PRELOAD_COUNT);
 		add(context, entries, Screen.VIDEO_PRELOAD, R.string.video_preload_size, 0,
 				Preferences.KEY_VIDEO_PRELOAD_SIZE_MB);
+		add(context, entries, Screen.VIDEO_PRELOAD, R.string.tiktok_prefetch,
+				R.string.tiktok_prefetch_early_description, null);
+		add(context, entries, Screen.VIDEO_PRELOAD, R.string.tiktok_prefetch_early,
+				R.string.tiktok_prefetch_early_description, Preferences.KEY_TIKTOK_PREFETCH_EARLY);
+		add(context, entries, Screen.VIDEO_PRELOAD, R.string.tiktok_prefetch_backward,
+				R.string.tiktok_prefetch_backward_description, Preferences.KEY_TIKTOK_PREFETCH_BACKWARD);
 		add(context, entries, Screen.PLAYBACK_SPEED, R.string.enable_video_playback_speed_control,
 				R.string.enable_video_playback_speed_control__summary, Preferences.KEY_VIDEO_PLAYBACK_SPEED_CONTROL);
 		add(context, entries, Screen.PLAYBACK_SPEED, R.string.playback_speed_presets,

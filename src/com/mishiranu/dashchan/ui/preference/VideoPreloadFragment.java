@@ -55,6 +55,14 @@ public class VideoPreloadFragment extends PreferenceFragment {
 		addDependency(Preferences.KEY_VIDEO_PRELOAD_NETWORK, Preferences.KEY_VIDEO_PRELOAD, true);
 		addDependency(Preferences.KEY_VIDEO_PRELOAD_COUNT, Preferences.KEY_VIDEO_PRELOAD, true);
 		addDependency(Preferences.KEY_VIDEO_PRELOAD_SIZE_MB, Preferences.KEY_VIDEO_PRELOAD, true);
+
+		addHeader(R.string.tiktok_prefetch);
+		addCheck(true, Preferences.KEY_TIKTOK_PREFETCH_EARLY, Preferences.DEFAULT_TIKTOK_PREFETCH_EARLY,
+				R.string.tiktok_prefetch_early, R.string.tiktok_prefetch_early_description);
+		addSeek(Preferences.KEY_TIKTOK_PREFETCH_BACKWARD, Preferences.DEFAULT_TIKTOK_PREFETCH_BACKWARD,
+				getString(R.string.tiktok_prefetch_backward), "%d",
+				new Pair<>(0, getString(R.string.tiktok_prefetch_backward_off)), 0, 2, 1);
+		addDependency(Preferences.KEY_TIKTOK_PREFETCH_EARLY, Preferences.KEY_VIDEO_PRELOAD, true);
 	}
 
 	@Override

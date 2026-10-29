@@ -713,6 +713,12 @@
 	<string name="tiktok_filter_hint">Теперь в TikTok-режиме можно листать и фото! Удерживайте кнопку TikTok, чтобы выбрать: всё, только видео или только фото. Фильтр также доступен через меню «⋮».</string>
 	<string name="enable_video_tiktok_mode">Включить режим TikTok</string>
 	<string name="disable_video_tiktok_mode">Выключить режим TikTok</string>
+	<string name="tiktok_prefetch">Предзагрузка в режиме TikTok</string>
+	<string name="tiktok_prefetch_early">Загружать заранее, пока видео ещё грузится</string>
+	<string name="tiktok_prefetch_early_description">Начинать кэшировать следующее и предыдущее вложения сразу после открытия страницы в режиме TikTok, не дожидаясь полной загрузки видимого видео. Свайпы срабатывают быстрее, но фоновая загрузка делит канал с текущим видео и расходует больше трафика.</string>
+	<string name="tiktok_prefetch_backward">Сколько предыдущих вложений загружать</string>
+	<string name="tiktok_prefetch_backward_off">Выключено</string>
+	<string name="tiktok_prefetch_backward_description">Сколько вложений позади текущего кэшируется в режиме TikTok, чтобы свайп назад работал так же быстро, как вперёд. 0 отключает предзагрузку назад.</string>
 	<string name="video_screen_off_action">При выключении экрана</string>
 	<string name="video_screen_off_action__summary">Выберите, ставить ли видео PiP на паузу или продолжать воспроизведение с выключенным экраном</string>
 	<string name="video_screen_off_action_pause">Ставить видео на паузу</string>
