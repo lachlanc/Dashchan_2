@@ -1,10 +1,12 @@
 # TikTok mode prefetch
 
-## Scope
+## Scope and verification
 
-Source-only change. No Gradle, compilation, unit-test execution, lint, APK build or
-device validation was performed for it (the repository's default `SOURCE PATCH ONLY`
-mode forbids all of those until the user switches modes).
+`FAST LOCAL TEST` / `PUBLIC RELEASE` were run on scratchboxjr for this change:
+`assembleGithubNdebug`, the full `testGithubDebugUnitTest` suite (737 tests, including
+`GalleryPrefetchPlanTest`) and `assembleGithubRelease`, whose signed APK was published to
+the private F-Droid repository as `3.2.72-f1` (versionCode 11532) and verified by hash.
+No device was attached, so the behaviour below is not device-validated.
 
 The existing `MediaPreloader` remains the only owner of optional background network
 traffic: one bounded, UI-thread-owned queue, one transfer at a time. This change does
@@ -41,14 +43,14 @@ Not changed: `NextVideoPreparation` still prepares at most one speculative decod
 only for the forward neighbour, `VideoPageFrames` retention, the `.part`-file ownership of
 the foreground player, size/network limits, and the low-RAM policy.
 
-## Prepared tests (not run)
+## Tests
 
-`GalleryPrefetchPlanTest` covers: ordinary forward-only order and slot accounting,
-non-playable videos consuming a slot in ordinary mode but not in TikTok mode, the video
-and photo filters, both budgets, reverse interleaving with either preferred direction, the
-disabled reverse window, zero budgets, and both gallery ends.
+`GalleryPrefetchPlanTest` passes and covers: ordinary forward-only order and slot
+accounting, non-playable videos consuming a slot in ordinary mode but not in TikTok mode,
+the video and photo filters, both budgets, reverse interleaving with either preferred
+direction, the disabled reverse window, zero budgets, and both gallery ends.
 
-Runtime behaviour is not proven by those fixtures.
+Those fixtures do not prove device rendering, network behaviour or bandwidth sharing.
 
 ## Device checks
 
