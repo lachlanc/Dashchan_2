@@ -727,3 +727,26 @@ tasks.named('clean').configure {
 	// Finish AGP's native clean before removing its build metadata.
 	finalizedBy cxxClean
 }
+
+// Fork: give every locally built release its own versionName/versionCode so the private F-Droid
+// repository can update over the previous build without editing the release metadata in
+// metadata/versions.json. scripts/fork-release.sh bumps the counter and rewinds it if the build
+// fails. Without the file (upstream checkouts) nothing changes.
+def forkVersionFile = rootProject.file('fork-version.properties')
+def forkVersionNumber = {
+	def properties = new Properties()
+	if (forkVersionFile.isFile()) {
+		forkVersionFile.withInputStream { properties.load(it) }
+	}
+	(properties.getProperty('forkVersion', '0') as Integer) ?: 0
+}()
+
+androidComponents {
+	finalizeDsl { dsl ->
+		if (forkVersionNumber > 0) {
+			// The offset keeps the final digit free for ABI splits, as the F-Droid release does.
+			dsl.defaultConfig.versionCode = (dsl.defaultConfig.versionCode ?: 0) + forkVersionNumber * 10 + 2
+			dsl.defaultConfig.versionName = (dsl.defaultConfig.versionName ?: '') + "-f$forkVersionNumber"
+		}
+	}
+}

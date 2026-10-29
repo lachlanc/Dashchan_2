@@ -53,7 +53,8 @@ public class GalleryPrefetchPlanTest {
 				0, 0, 2, 0, GalleryPrefetchPlan.FORWARD)));
 		assertTrue(GalleryPrefetchPlan.build(gallery("ixv"), 0, false,
 				0, 0, 1, 0, GalleryPrefetchPlan.FORWARD).isEmpty());
-		assertEquals(Arrays.asList(1, 2), indices(GalleryPrefetchPlan.build(gallery("ioi"), 0, false,
+		// A file that is neither image nor video consumes nothing.
+		assertEquals(Arrays.asList(2, 3), indices(GalleryPrefetchPlan.build(gallery("ioii"), 0, false,
 				0, 2, 0, 0, GalleryPrefetchPlan.FORWARD)));
 	}
 
@@ -95,7 +96,7 @@ public class GalleryPrefetchPlanTest {
 	@Test public void reverseWindowAddsThePreviousItemsAndKeepsTheirDirection() {
 		List<GalleryPrefetchPlan.Slot> plan = GalleryPrefetchPlan.build(gallery("iiviviv"), 2, true,
 				ALL, 1, 2, 1, GalleryPrefetchPlan.FORWARD);
-		assertEquals(Arrays.asList(3, 1, 4, 5), indices(plan));
+		assertEquals(Arrays.asList(3, 1, 4, 6), indices(plan));
 		assertEquals(Arrays.asList(GalleryPrefetchPlan.FORWARD, GalleryPrefetchPlan.BACKWARD,
 				GalleryPrefetchPlan.FORWARD, GalleryPrefetchPlan.FORWARD), directions(plan));
 	}

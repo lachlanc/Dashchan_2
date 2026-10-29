@@ -10,3 +10,17 @@ described in `CODEX.md`.
 
 Never switch modes automatically. Preserve existing user changes and treat
 this directory as the active Dashchan_2 checkout.
+
+# Fork: Slooop
+
+This checkout is the `Slooop` fork; `FORK.md` covers what it adds, how to build
+and publish it, versioning and the signing key. Read it before a release.
+
+- Build and publish with `scripts/fork-release.sh build` then
+  `scripts/fork-release.sh sync`. `sync` updates the private F-Droid repository
+  and verifies the served APK hash; a build alone is not a release.
+- Never regenerate `~/.android-keystores/slooop-fork.jks`. If it is missing,
+  stop and ask the user.
+- Commit the `fork-version.properties` bump together with the release work.
+- Keep fork changes isolated so `git rebase upstream/master` stays cheap.
+

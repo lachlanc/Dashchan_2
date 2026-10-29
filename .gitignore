@@ -50,3 +50,7 @@
 !/third_party
 /third_party/*
 !/third_party/mozilla-translations
+!/fork-version.properties
+!/scripts
+!/scripts/**
+!/FORK.md
