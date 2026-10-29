@@ -747,6 +747,12 @@ androidComponents {
 			// The offset keeps the final digit free for ABI splits, as the F-Droid release does.
 			dsl.defaultConfig.versionCode = (dsl.defaultConfig.versionCode ?: 0) + forkVersionNumber * 10 + 2
 			dsl.defaultConfig.versionName = (dsl.defaultConfig.versionName ?: '') + "-f$forkVersionNumber"
+			// Fork builds update through the private F-Droid repository only. The upstream GitHub
+			// release is signed with another key, so an in-app update could never install over it.
+			dsl.buildTypes.getByName('release').buildConfigField 'boolean',
+					'ALLOW_APPLICATION_SELF_UPDATE', 'false'
+			dsl.buildTypes.getByName('ndebug').buildConfigField 'boolean',
+					'ALLOW_APPLICATION_SELF_UPDATE', 'false'
 		}
 	}
 }

@@ -45,7 +45,13 @@ version, so a local build does not require editing it; `CODEX.md`'s changelog ru
 base version itself is raised.
 
 Only one ABI is published at a time (arm64-v8a by default). Publishing a second ABI under the same
-version would be rejected: rebuild and sync instead.
+version would be rejected: rebuild and sync instead. Old versions stay in `~/fdroid/repo/` (the
+Seal builds accumulate the same way); delete the APKs you no longer want and run `fdroid update`.
+
+Fork builds set `ALLOW_APPLICATION_SELF_UPDATE=false`: updates come from the private F-Droid
+repository, because the upstream GitHub release is signed with another key and could never install
+over a fork build. Upstream checkouts, where `fork-version.properties` does not exist, keep their
+normal update behaviour.
 
 ### Signing key: never regenerate it
 
