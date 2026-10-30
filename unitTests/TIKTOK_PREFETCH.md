@@ -9,11 +9,18 @@ the private F-Droid repository as `3.2.72-f1` (versionCode 11532) and verified b
 No device was attached, so the behaviour below is not device-validated.
 
 The existing `MediaPreloader` remains the only owner of optional background network
-traffic: one bounded, UI-thread-owned queue, one transfer at a time. This change does
-not add workers, decoders or cache formats.
+traffic: one bounded, UI-thread-owned queue. It now keeps at most two transfers in
+flight, so the next and the previous attachment can be cached at the same time. This
+change does not add decoders or cache formats.
 
 ## What changed
 
+- **Concurrent transfers.** The queue runs up to two downloads at once on its own
+  idle-timed pool (`newIdleThreadPool(2, …)`), separate from `PARALLEL_EXECUTOR` so the
+  visible player's own download keeps priority. In-flight transfers are tracked by URI;
+  re-planning keeps every one that is still wanted and cancels only the rest. A swipe
+  therefore finds both neighbours already cached instead of waiting for the reverse item
+  to queue behind the forward budget.
 - **Filter-aware plan.** `GalleryPrefetchPlan` chooses the neighbouring attachments.
   Ordinary horizontal browsing keeps the previous behaviour exactly: forward only, and a
   cached, oversized, duplicate or non-playable video still consumes its slot instead of
@@ -25,8 +32,8 @@ not add workers, decoders or cache formats.
   setting is a count from 0 to 2 (default 1); 0 restores forward-only prefetching. The
   per-kind budgets ("Number of next photos"/"next videos") still cap each direction.
 - **Direction priority.** When a vertical TikTok gesture starts moving, the queued
-  transfers are reordered toward the finger's direction. The transfer already in flight
-  is not interrupted.
+  transfers are reordered toward the finger's direction. Transfers already in flight are
+  not interrupted.
 - **No restart on re-plan.** Every page change recomputes the plan, but a transfer that is
   still in the new plan keeps running. Previously a page change cancelled the preloader's
   active task, so repeatedly swiping restarted the same upcoming download.
@@ -59,13 +66,16 @@ Those fixtures do not prove device rendering, network behaviour or bandwidth sha
    setting off it should not start until the visible video finishes.
 2. Swipe forward three or four times, then back. Reverse swipes over prefetched items
    should not show a progress loop, and the log should show one transition at a time.
-3. Set "Previous attachments to prefetch" to 0 and repeat; only forward items are cached.
-4. Photos-only and everything filters: no slot may be spent on media the filter cannot
+3. Watch the first seconds of a long video with both neighbours uncached: two background
+   downloads run alongside the visible stream. If the visible video stutters, the
+   concurrency (not the size limits) is what to tune down.
+4. Set "Previous attachments to prefetch" to 0 and repeat; only forward items are cached.
+5. Photos-only and everything filters: no slot may be spent on media the filter cannot
    reach. A thread with a non-playable video before a playable one must still prefetch the
    playable one in TikTok mode.
-5. Enable an extended diagnostics log and confirm that a page change does not restart an
+6. Enable an extended diagnostics log and confirm that a page change does not restart an
    in-flight `MediaPreloader` transfer (no repeated `preload` start for the same URL).
-6. Background the app, enter PiP, open the grid, change the network to a disallowed one:
+7. Background the app, enter PiP, open the grid, change the network to a disallowed one:
    prefetch must stop as before, and must not resurrect itself while paused.
-7. Low-RAM device or a video above the size limit: unchanged behaviour, no prefetch, no
+8. Low-RAM device or a video above the size limit: unchanged behaviour, no prefetch, no
    decode preparation.

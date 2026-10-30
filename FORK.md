@@ -10,7 +10,8 @@ or a release is `FAST LOCAL TEST` / `PUBLIC RELEASE` and needs the user to say s
 ## What the fork adds
 
 - TikTok mode prefetching: a filter-aware plan for the neighbouring attachments, a reverse
-  window, swipe-direction priority, and early starts while the visible video is still streaming.
+  window, swipe-direction priority, two concurrent transfers (next and previous), and early
+  starts while the visible video is still streaming.
   `unitTests/TIKTOK_PREFETCH.md` describes the behaviour and the device checks; the pure selection
   logic is in `src/com/mishiranu/dashchan/ui/gallery/GalleryPrefetchPlan.java`.
 

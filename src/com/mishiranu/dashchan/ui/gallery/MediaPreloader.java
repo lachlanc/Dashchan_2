@@ -15,24 +15,31 @@ import com.mishiranu.dashchan.util.ConcurrentUtils;
 import java.io.File;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Executor;
 
-/** One bounded, UI-thread-owned queue for the visible gallery, never for the background/PiP player. */
+/**
+ * Bounded, UI-thread-owned prefetch queue for the visible gallery, never for the background/PiP player.
+ * At most {@link #MAX_CONCURRENT} neighbours are transferred at once so the next and the previous swipe
+ * both have their file ready; the visible player's own download keeps priority by staying outside it.
+ */
 final class MediaPreloader {
-	private static final Executor EXECUTOR = ConcurrentUtils.newSingleThreadPool(20000, "MediaPreloader", null);
+	private static final int MAX_CONCURRENT = 2;
+	private static final Executor EXECUTOR = ConcurrentUtils.newIdleThreadPool(MAX_CONCURRENT, 20000,
+			"MediaPreloader", null);
 	private final GalleryInstance gallery;
 	private final ConnectivityManager connectivity;
 	private final ArrayDeque<Entry> queue = new ArrayDeque<>();
-	private PreloadMediaTask task;
-	private Entry currentEntry;
+	private final HashMap<Uri, Running> running = new HashMap<>();
 	private ConnectivityManager.NetworkCallback networkCallback;
 	private boolean resumed;
 	private boolean tikTokMode;
 	private int tikTokFilter = Preferences.getTikTokMediaFilter();
 	private int preferredDirection = GalleryPrefetchPlan.FORWARD;
-	private int generation;
 	private Runnable onVideoCached;
 
 	private static final class Entry {
@@ -48,6 +55,16 @@ final class MediaPreloader {
 			this.maxBytes = maxBytes;
 			this.network = network;
 			this.direction = direction;
+		}
+	}
+
+	/** One transfer in flight; identity is what tells a late callback from a cancelled one. */
+	private static final class Running {
+		final Entry entry;
+		PreloadMediaTask task;
+
+		Running(Entry entry) {
+			this.entry = entry;
 		}
 	}
 
@@ -103,11 +120,11 @@ final class MediaPreloader {
 		this.tikTokMode = tikTokMode;
 		this.tikTokFilter = tikTokFilter;
 		// The pending order was chosen for the previous filter. The caller restarts from the
-		// current item immediately afterwards; keep only the active transfer until then.
+		// current item immediately afterwards; keep only the active transfers until then.
 		queue.clear();
 	}
 
-	/** Reorders pending transfers toward the swipe direction without interrupting the active one. */
+	/** Reorders pending transfers toward the swipe direction without interrupting the active ones. */
 	void setDirection(int direction) {
 		if (direction != GalleryPrefetchPlan.FORWARD && direction != GalleryPrefetchPlan.BACKWARD) return;
 		if (preferredDirection == direction) return;
@@ -125,8 +142,19 @@ final class MediaPreloader {
 	}
 
 	void stop() {
-		cancelActive();
+		cancelAll();
 		queue.clear();
+		unregisterNetworkCallback();
+	}
+
+	private void cancelAll() {
+		for (Running active : running.values()) {
+			active.task.cancel();
+		}
+		running.clear();
+	}
+
+	private void unregisterNetworkCallback() {
 		if (networkCallback != null) {
 			try {
 				connectivity.unregisterNetworkCallback(networkCallback);
@@ -137,63 +165,68 @@ final class MediaPreloader {
 		}
 	}
 
-	private void cancelActive() {
-		generation++;
-		currentEntry = null;
-		if (task != null) {
-			task.cancel();
-			task = null;
-		}
-	}
-
 	void start(GalleryItem current) {
 		if (!resumed || current == null || gallery.callback.isGalleryMode() || connectivity == null) {
 			stop();
 			return;
 		}
 		List<Entry> wanted = buildPlan(current);
-		HashSet<Uri> wantedUris = new HashSet<>();
+		HashSet<Uri> wantedUris = new HashSet<>(wanted.size());
 		for (Entry entry : wanted) wantedUris.add(entry.uri);
-		// Keep a transfer that is still wanted: re-planning after every swipe must not restart
-		// the very download the next swipe depends on.
-		if (currentEntry != null && !wantedUris.contains(currentEntry.uri)) {
-			cancelActive();
+		// Re-planning after every swipe keeps every transfer that is still wanted, so rapid
+		// swiping never restarts the downloads it depends on.
+		Iterator<Map.Entry<Uri, Running>> iterator = running.entrySet().iterator();
+		while (iterator.hasNext()) {
+			Map.Entry<Uri, Running> active = iterator.next();
+			if (!wantedUris.contains(active.getKey())) {
+				active.getValue().task.cancel();
+				iterator.remove();
+			}
 		}
 		queue.clear();
 		for (Entry entry : wanted) {
-			if (currentEntry == null || !entry.uri.equals(currentEntry.uri)) queue.add(entry);
+			if (!running.containsKey(entry.uri)) queue.add(entry);
 		}
-		if (queue.isEmpty() && currentEntry == null) {
-			stop();
+		if (queue.isEmpty() && running.isEmpty()) {
+			unregisterNetworkCallback();
 			return;
 		}
-		if (networkCallback == null) {
-			networkCallback = new ConnectivityManager.NetworkCallback() {
-				private void check() {
-					if (networkCallback == this && currentEntry != null && !allowed(currentEntry)) {
-						cancelActive();
-						next();
-					}
+		registerNetworkCallback();
+		if (networkCallback != null) pump();
+	}
+
+	private void registerNetworkCallback() {
+		if (networkCallback != null) return;
+		networkCallback = new ConnectivityManager.NetworkCallback() {
+			private void check() {
+				if (networkCallback != this) return;
+				ArrayList<Running> disallowed = new ArrayList<>(running.size());
+				for (Running active : running.values()) {
+					if (!allowed(active.entry)) disallowed.add(active);
 				}
-				@Override
-				public void onCapabilitiesChanged(@NonNull Network network,
-						@NonNull NetworkCapabilities capabilities) {
-					check();
+				for (Running active : disallowed) {
+					if (running.remove(active.entry.uri) != null) active.task.cancel();
 				}
-				@Override
-				public void onLost(@NonNull Network network) {
-					check();
+				if (!disallowed.isEmpty()) {
+					pump();
 				}
-			};
-			try {
-				connectivity.registerDefaultNetworkCallback(networkCallback, ConcurrentUtils.HANDLER);
-			} catch (SecurityException | IllegalArgumentException e) {
-				networkCallback = null;
-				queue.clear();
-				return;
 			}
+			@Override
+			public void onCapabilitiesChanged(@NonNull Network network,
+					@NonNull NetworkCapabilities capabilities) {
+				check();
+			}
+			@Override
+			public void onLost(@NonNull Network network) {
+				check();
+			}
+		};
+		try {
+			connectivity.registerDefaultNetworkCallback(networkCallback, ConcurrentUtils.HANDLER);
+		} catch (SecurityException | IllegalArgumentException e) {
+			networkCallback = null;
+			queue.clear();
 		}
-		if (task == null) next();
 	}
 
 	private List<Entry> buildPlan(GalleryItem current) {
@@ -234,24 +267,32 @@ final class MediaPreloader {
 				&& PreloadMediaTask.isNetworkAllowed(connectivity, entry.network);
 	}
 
-	private void next() {
+	/** Fills the free transfer slots in queue order; the queue is already direction-prioritised. */
+	private void pump() {
 		Entry entry;
-		while ((entry = queue.poll()) != null) {
-			if (!allowed(entry)) continue;
-			currentEntry = entry;
-			int expectedGeneration = generation;
-			Entry expectedEntry = entry;
-			task = new PreloadMediaTask(Chan.getPreferred(gallery.chanName, entry.uri), entry.uri, entry.maxBytes,
-					connectivity, entry.network, () -> {
-						if (generation != expectedGeneration || currentEntry != expectedEntry) return;
-						task = null;
-						currentEntry = null;
-						if (!expectedEntry.image && onVideoCached != null) onVideoCached.run();
-						next();
-					});
-			task.execute(EXECUTOR);
-			return;
+		while (running.size() < MAX_CONCURRENT && (entry = queue.poll()) != null) {
+			if (!allowed(entry) || running.containsKey(entry.uri)) continue;
+			startTransfer(entry);
 		}
-		stop();
+		if (queue.isEmpty() && running.isEmpty()) {
+			// Nothing left to watch for: the next page change or resume re-registers.
+			unregisterNetworkCallback();
+		}
+	}
+
+	private void startTransfer(Entry entry) {
+		Running active = new Running(entry);
+		active.task = new PreloadMediaTask(Chan.getPreferred(gallery.chanName, entry.uri), entry.uri,
+				entry.maxBytes, connectivity, entry.network, () -> onTransferFinished(active));
+		running.put(entry.uri, active);
+		active.task.execute(EXECUTOR);
+	}
+
+	private void onTransferFinished(Running active) {
+		// A cancelled or replaced transfer has already left the map and must not resume the queue.
+		if (running.get(active.entry.uri) != active) return;
+		running.remove(active.entry.uri);
+		if (!active.entry.image && onVideoCached != null) onVideoCached.run();
+		pump();
 	}
 }
