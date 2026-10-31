@@ -352,7 +352,9 @@ android {
 	ndkVersion = androidNdkVersion
 
 	defaultConfig {
-		applicationId = 'io.dashchan2'
+		// Fork: a distinct application id so Slooop Fork installs alongside the upstream app
+		// instead of replacing it. Never change this back: the two use different signing keys.
+		applicationId = 'io.dashchan2.fork'
 		versionCode = 11520
 		versionName = '3.2.72'
 		def releaseVersionCode = versionCode
@@ -372,8 +374,8 @@ android {
 		targetSdk = 37
 		testInstrumentationRunner = 'androidx.test.runner.AndroidJUnitRunner'
 		manifestPlaceholders = [
-				appLabel: 'Slooop',
-				fileProviderAuthority: 'com.mishiranu.providers.dashchan'
+				appLabel: 'Slooop Fork',
+				fileProviderAuthority: 'io.dashchan2.fork.provider'
 		]
 
 		// noinspection UnnecessaryQualifiedReference
@@ -533,10 +535,10 @@ android {
 	def configureProductionBuildType = { buildType ->
 		buildType.debuggable = false
 		buildType.manifestPlaceholders = [
-				appLabel: 'Slooop',
-				fileProviderAuthority: 'io.dashchan2.provider'
+				appLabel: 'Slooop Fork',
+				fileProviderAuthority: 'io.dashchan2.fork.provider'
 		]
-		buildType.buildConfigField 'String', 'FILE_PROVIDER_AUTHORITY', '"io.dashchan2.provider"'
+		buildType.buildConfigField 'String', 'FILE_PROVIDER_AUTHORITY', '"io.dashchan2.fork.provider"'
 		buildType.buildConfigField 'String', 'CHAN_EXTENSION_FEATURE_NAME', '"chan.extension.dashchan2"'
 		buildType.buildConfigField 'String', 'LIB_EXTENSION_FEATURE_NAME', '"lib.extension.dashchan2"'
 		buildType.buildConfigField 'String', 'LIB_WEBM_EXTENSION_NAME', '"webm2"'

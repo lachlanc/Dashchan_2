@@ -9,7 +9,7 @@ import unittest
 
 SCRIPT = Path(__file__).resolve().parents[1] / "fork-release.sh"
 BADGING = (
-    "package: name='io.dashchan2' versionCode='11532' versionName='3.2.72-f1' "
+    "package: name='io.dashchan2.fork' versionCode='11532' versionName='3.2.72-f1' "
     "platformBuildVersionName='16' compileSdkVersion='37'\n"
     "native-code: 'arm64-v8a'\n"
 )
@@ -121,7 +121,7 @@ exit {exit_code}
         self.assertEqual("forkVersion=0", self.fork_version())
 
     def test_wrong_package_is_rejected(self):
-        result = self.run_script("build", AAPT_BADGING=BADGING.replace("io.dashchan2", "com.other"))
+        result = self.run_script("build", AAPT_BADGING=BADGING.replace("io.dashchan2.fork", "com.other"))
         self.assertNotEqual(0, result.returncode)
         self.assertIn("unexpected package name", result.stderr)
 

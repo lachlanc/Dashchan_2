@@ -61,8 +61,13 @@ normal update behaviour.
 - A backup copy is at `~/.android-keystores/slooop-fork.keystore.properties`.
 - If `keystore.properties` is missing, copy the backup into the repo root.
 - Never create a new key. Builds signed with a different key cannot update the installed app.
-- The upstream GitHub release is signed with a different key, so moving from it to a local build
-  needs one uninstall (and loses app data). Say so before publishing a first build.
+- The fork uses its own application id, `io.dashchan2.fork` (label "Slooop Fork", provider authority
+  `io.dashchan2.fork.provider`), so it installs alongside the upstream Slooop instead of competing
+  with it: the two apps never update each other and never share data. A fork install therefore
+  starts empty; use Settings → About → Backup data in the upstream app and restore it here.
+- Reply push needs the Firebase project to know the new package name. The github flavour's
+  `distribution/github/res/values/firebase.xml` still points at the upstream app registration, so
+  push replies stay dormant until that registration is added for `io.dashchan2.fork`.
 
 ## One-time machine setup
 

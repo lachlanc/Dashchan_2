@@ -5,8 +5,9 @@
 `FAST LOCAL TEST` / `PUBLIC RELEASE` were run on scratchboxjr for this change:
 `assembleGithubNdebug`, the full `testGithubDebugUnitTest` suite (737 tests, including
 `GalleryPrefetchPlanTest`) and `assembleGithubRelease`, whose signed APK was published to
-the private F-Droid repository as `3.2.72-f1` (versionCode 11532) and verified by hash.
-No device was attached, so the behaviour below is not device-validated.
+the private F-Droid repository as `3.2.72-f4`, versionCode 11562, package
+`io.dashchan2.fork`, and verified by hash. No device was attached, so the behaviour below
+is not device-validated.
 
 The existing `MediaPreloader` remains the only owner of optional background network
 traffic: one bounded, UI-thread-owned queue. It now keeps at most two transfers in

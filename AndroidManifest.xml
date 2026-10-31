@@ -167,7 +167,7 @@
 			android:enabled="true"
 			android:exported="true"
 			android:icon="@mipmap/ic_launcher_default"
-			android:label="Slooop"
+			android:label="Slooop Fork"
 			android:logo="@drawable/application_logo_default">
 			<intent-filter>
 				<action android:name="android.intent.action.MAIN" />
@@ -212,7 +212,7 @@
 			android:enabled="false"
 			android:exported="true"
 			android:icon="@mipmap/ic_launcher"
-			android:label="Slooop"
+			android:label="Slooop Fork"
 			android:logo="@mipmap/ic_logo">
 			<intent-filter>
 				<action android:name="android.intent.action.MAIN" />
@@ -799,7 +799,7 @@
 			android:enabled="false"
 			android:exported="true"
 			android:icon="@mipmap/ic_launcher_material"
-			android:label="Slooop"
+			android:label="Slooop Fork"
 			android:logo="@mipmap/ic_logo">
 			<intent-filter>
 				<action android:name="android.intent.action.MAIN" />

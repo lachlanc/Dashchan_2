@@ -15,7 +15,7 @@ FDROID_BASE_URL="${FDROID_BASE_URL:-http://127.0.0.1:8099/fdroid/repo}"
 GRADLEW="${GRADLEW:-./gradlew}"
 FORK_VERSION_FILE="$REPO/fork-version.properties"
 KEYSTORE_PROPERTIES="$REPO/keystore.properties"
-EXPECTED_PACKAGE="io.dashchan2"
+EXPECTED_PACKAGE="io.dashchan2.fork"
 export JAVA_HOME="${JAVA_HOME:-/usr/lib/jvm/java-21-openjdk-amd64}"
 
 die() { echo "error: $*" >&2; exit 1; }
